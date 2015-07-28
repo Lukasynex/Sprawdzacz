@@ -43,9 +43,6 @@ public class MainActivity extends ActionBarActivity {
             public void onClick(View v) {
                 final TextView tx = (TextView) findViewById(R.id.tview);
 
-                Type collectionType = new TypeToken<String>() {
-                }.getType();
-
                 SimpleRestAdapter adapter = new SimpleRestAdapter(WebService.BASE_URL);
                 WebService service = adapter.getRestAdapter().create(WebService.class);
 
@@ -58,16 +55,13 @@ public class MainActivity extends ActionBarActivity {
                     @Override
                     public void success(Response result, Response response) {
 
-                        Log.d(TAG, "error = " + response.getUrl());
-                        Log.d(TAG, "error = " + response.toString());
+                        Log.d(TAG, "success, url = " + response.getUrl());
+                        Log.d(TAG, "success = " + response.toString());
                         BufferedReader reader;
                         StringBuilder sb = new StringBuilder();
                         try {
-
                             reader = new BufferedReader(new InputStreamReader(result.getBody().in()));
-
                             String line;
-
                             try {
                                 while ((line = reader.readLine()) != null) {
                                     sb.append(line);
