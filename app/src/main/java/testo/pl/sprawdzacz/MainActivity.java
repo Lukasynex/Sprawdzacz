@@ -118,7 +118,6 @@ public class MainActivity extends AppCompatActivity {
                                     .replaceAll("%2C", "|")
                                     .replaceAll("%20", " ");
 
-
                             String[] withHtmlCharacters = pretty.split("title");
 
                             for (String string : withHtmlCharacters) {
