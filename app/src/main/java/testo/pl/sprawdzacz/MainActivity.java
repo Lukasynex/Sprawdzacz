@@ -74,6 +74,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 final TextView tx = (TextView) findViewById(R.id.tview);
+                final TextView titleX = (TextView) findViewById(R.id.title);
 
                 SimpleRestAdapter adapter = new SimpleRestAdapter(WebService.BASE_URL);
                 WebService service = adapter.getRestAdapter().create(WebService.class);
@@ -107,17 +108,38 @@ public class MainActivity extends AppCompatActivity {
                             e.printStackTrace();
                         }
 
+                        String selectedEpisode = "Regular Show Season " + season + " Episode " + episode;
+                        String title = "";
                         String _result_ = sb.toString();
                         Log.d(TAG, "received result : " + _result_);
-                        if (_result_.contains("Regular Show Season " + season + " Episode " + episode)) {
-                            tx.setText("Episode " + episode + " of season " + season + " AVAILABLE!!!");
+                        if (_result_.contains(selectedEpisode)) {
+                            String pretty = _result_.replaceAll("<", "").replaceAll(">", "")
+                                    .replaceAll("%7C", "")
+                                    .replaceAll("%2C", "|")
+                                    .replaceAll("%20", " ");
+
+
+                            String[] withHtmlCharacters = pretty.split("title");
+
+                            for (String string : withHtmlCharacters) {
+                                Log.d(TAG, "new string: " + string);
+                                if (string.contains(selectedEpisode)) {
+                                    String[] closer = string.split("\\|");
+                                    title = closer[0].replaceAll(selectedEpisode, "");
+                                    title= title.replaceAll("=","").replaceAll("Watch cartoons online","");
+//                                    Log.d(TAG, "title:" + );
+                                }
+                            }
+
+                            titleX.setText(title);
+                            tx.setText(selectedEpisode + " AVAILABLE!!!");
                             buildNotification(season, episode, true);
                             RecentEpisode
                                     .getInstance()
                                     .insert(MainActivity.this, new Pair<>(season, episode));
 
                         } else {
-                            tx.setText("Episode " + episode + " of season " + season + " unavailable");
+                            tx.setText(selectedEpisode + " unavailable");
                             buildNotification(season, episode, false);
 
                         }
@@ -128,7 +150,8 @@ public class MainActivity extends AppCompatActivity {
                     public void failure(RetrofitError error) {
                         Log.d(TAG, "error = " + error.getUrl());
                         Log.d(TAG, "error = " + error.toString());
-                        tx.setText("Episode " + episode.toString() + " of season " + season.toString() + " unavailable");
+                        tx.setText("Episode " + episode.toString()
+                                + " of season " + season.toString() + " unavailable");
                     }
                 });
             }
@@ -141,26 +164,32 @@ public class MainActivity extends AppCompatActivity {
         start.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startService(new Intent(MainActivity.this, Notificator.class));
+                if (App.intentService == null)
+                    Log.d(TAG, "intent is null, recreating");
+                else {
+//                    performing stopping existing intent
+                    stopService(App.intentService);
+                }
+                App.intentService = new Intent(MainActivity.this, Notificator.class);
+
                 Calendar cal = Calendar.getInstance();
-                Intent intent = new Intent(MainActivity.this, Notificator.class);
-                PendingIntent pintent = PendingIntent
-                        .getService(MainActivity.this, 0, intent, 0);
+                PendingIntent pendingIntent = PendingIntent
+                        .getService(MainActivity.this, 0, App.intentService, 0);
 
                 AlarmManager alarm = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
                 // Start service every hour
                 alarm.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(),
-                        SECONDS * 1000, pintent);
+                        SECONDS * 1000, pendingIntent);
 
             }
         });
         stop.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                stopService(new Intent(MainActivity.this, Notificator.class));
+                if (App.intentService != null)
+                    stopService(App.intentService);
             }
         });
-
     }
 
     private void buildNotification(Integer season, Integer episode, boolean isHere) {
